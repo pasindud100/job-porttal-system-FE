@@ -1,91 +1,102 @@
-import React, { useEffect } from "react";
-import { Route, Routes } from "react-router-dom";
-import AOS from "aos";
-import "aos/dist/aos.css";
+import { Navigate, Route, Routes } from "react-router-dom";
+import Register from "./pages/RegisterPage/Register";
+import LoginPage from "./pages/LoginPage/LoginPage";
+import HomePage from "./pages/HomePage/HomePage";
+import JobDetails from "./pages/JobDetails/JobDetails";
+import JobPage from "./pages/JobPage/JobPage";
+import TrainingPage from "./pages/TrainingPage/TrainingPage";
+import PrivateRoute from "./component/PrivateRoute/PrivateRoute";
+import { useState, useEffect } from "react";
+import ProfilePage from "./pages/ProfilePage/ProfilePage";
+import { AuthProvider } from "./context/AuthContext";
+import CompanyPage from "./pages/CompanyPage/CompanyPage";
+import VacancyPage from "./pages/VacancyPage/VacancyPage";
+import CourseDetails from "./pages/CourseDetails/CourseDetails";
+import ApplicationsPage from "./pages/ApplicaionsPage/ApplicationsPage";
 
-import Footer from "./pages/Footer/Footer";
-import ContactUs from "./pages/ContactUs/ContactUs";
-import AboutUs from "./pages/AboutUs/AboutUs";
-import FirstAppear from "./pages/FirstAppear/FirstApper";
-import MainBanner from "./pages/Banner/MainBanner";
-import OurService from "./pages/Service/OurService";
-import Login from "./pages/Login/Login";
-import Register from "./pages/Signup/Signup";
-import JobPost from "./pages/Jobs/JobPost";
-import CoursePost from "./pages/Courses/CoursePost";
-import EmpDashboard from "./pages/Employer/EmpDashboard";
-import TrainerDashboard from "./pages/Trainer/TrainerDashboard";
-import AdminDashboard from "./pages/Admin/AdminDashboard";
-import Navbar from "./components/Navbar";
-import Home from "./pages/Home/Home";
-import ProtectedRoute from "./components/ProtectedRoute"; // Import the ProtectedRoute component
+import { JobsProvider } from "./context/JobsProvider";
+import AppliedJobsPage from "./pages/AppliedJobsPage/AppliedJobsPage";
+import EnrollmentsPage from "./pages/EnrollmentsPage/EnrollmentsPage";
+import CourseManager from "./pages/CourseManager/CourseManager";
+import RegisteredStudents from "./pages/RegisteredStudents/RegisteredStudents";
 
-const App = () => {
+function App() {
+  const [hasToken, sethasToken] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    AOS.init({
-      offset: 100,
-      duration: 800,
-      easing: "ease-in-sine",
-      delay: 100,
-    });
-    AOS.refresh();
+    const token = localStorage.getItem("iap-final-token");
+    sethasToken(!!token);
+    setLoading(false);
   }, []);
 
+  if (loading) return <div>Loading...</div>;
+
   return (
-    <div className="bg-white dark:bg-gray-900 dark:text-white duration-200">
-      {/* <Navbar /> */}
-      <Home />
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <>
-              <MainBanner />
-              <FirstAppear />
-              <OurService />
-              <AboutUs />
-              <ContactUs />
-            </>
-          }
-        />
+    <div>
+      <AuthProvider>
+        <JobsProvider>
+          {hasToken ? (
+            <Routes>
+              {/* Common routes for authenticated users */}
+              <Route
+                element={
+                  <PrivateRoute
+                    allowedRoles={["JOB_SEEKER", "EMPLOYER", "TRAINER"]}
+                  />
+                }
+              >
+                <Route element={<ProfilePage />} path="/profile" />
+              </Route>
 
-        <Route path="/jobs" element={<JobPost />} />
-        <Route path="/courses" element={<CoursePost />} />
+              {/* Routes for Job Seekers */}
+              <Route element={<PrivateRoute allowedRoles={["JOB_SEEKER"]} />}>
+                <Route element={<TrainingPage />} path="/training-programs" />
+                <Route element={<HomePage />} path="/home" />
+                <Route element={<JobDetails />} path="/jobdetails" />
+                <Route element={<AppliedJobsPage />} path="/my-applications" />
+                <Route element={<EnrollmentsPage />} path="/my-trainings" />
+                <Route element={<CourseDetails />} path="/coursedetails" />
+                <Route element={<JobPage />} path="/jobs" />
+                <Route element={<Navigate to={"/home"} />} path="*" />
+              </Route>
 
-        {/* Protected Routes */}
-        <Route
-          path="/employer"
-          element={
-            <ProtectedRoute
-              element={<EmpDashboard />}
-              allowedRoles={["ROLE_EMPLOYER", "ROLE_ADMIN"]}
-            />
-          }
-        />
-        <Route
-          path="/trainer"
-          element={
-            <ProtectedRoute
-              element={<TrainerDashboard />}
-              allowedRoles={["ROLE_TRAINER", "ROLE_ADMIN"]}
-            />
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute
-              element={<AdminDashboard />}
-              allowedRoles={["ROLE_ADMIN"]}
-            />
-          }
-        />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-      </Routes>
-      <Footer />
+              {/* Routes for Employers */}
+              <Route element={<PrivateRoute allowedRoles={["EMPLOYER"]} />}>
+                <Route element={<HomePage />} path="/home" />{" "}
+                <Route element={<CompanyPage />} path="/manage-companies" />
+                <Route element={<VacancyPage />} path="/manage-vacansies" />
+                <Route
+                  element={<ApplicationsPage />}
+                  path="/manage-applications"
+                />
+              </Route>
+
+              {/* Routes for Trainer */}
+              <Route element={<PrivateRoute allowedRoles={["TRAINER"]} />}>
+                <Route element={<HomePage />} path="/home" />{" "}
+                <Route element={<CourseManager />} path="/manage-courses" />
+                <Route
+                  element={<RegisteredStudents />}
+                  path="/registered-students"
+                />
+              </Route>
+            </Routes>
+          ) : (
+            <Routes>
+              <Route element={<Navigate to={"/login"} />} path="*" />
+              <Route element={<HomePage />} path="/" />
+              <Route element={<LoginPage />} path="/login" />
+              <Route element={<JobDetails />} path="/jobdetails" />
+              <Route element={<JobPage />} path="/jobs" />
+              <Route element={<Register />} path="/register" />
+            </Routes>
+          )}
+        </JobsProvider>
+      </AuthProvider>
     </div>
   );
-};
+}
 
 export default App;
